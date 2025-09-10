@@ -14,6 +14,9 @@ class ARCoordinator: NSObject, ARSessionDelegate {
             gestureHandler.arView = arView
             planeManager.scene = arView?.scene
             bindPlaneArea()
+            if let arView {
+                self.boardManager = BoardManager(scene: arView.scene)
+            }
         }
     }
     
@@ -52,7 +55,6 @@ class ARCoordinator: NSObject, ARSessionDelegate {
         
     override init() {
         super.init()
-        self.boardManager = BoardManager(coordinator: self)
         self.pieceManager = PieceManager(coordinator: self)
         self.yutManager = YutManager(coordinator: self)
         self.assetCacheManager = AssetCacheManager()
@@ -89,6 +91,10 @@ class ARCoordinator: NSObject, ARSessionDelegate {
                 if collab.isHost {
                     print("🎯 Host: 말판 앵커 추가됨 - Guest들과 공유 중...")
                     // 앵커가 자동으로 다른 피어들과 공유됨
+                }
+                
+                DispatchQueue.main.async {
+                    self.arState?.gamePhase = .adjustingBoard
                 }
             }
         }
