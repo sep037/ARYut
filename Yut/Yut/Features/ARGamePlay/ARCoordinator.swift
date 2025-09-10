@@ -28,7 +28,7 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     
     // MARK: - MPC 연결
     
-    private let mpcManager = MPCManager.shared
+    private let collab = CollaborationService()
     
     // MARK: - 서브 매니저
     
@@ -78,7 +78,7 @@ class ARCoordinator: NSObject, ARSessionDelegate {
                 boardManager.placeYutBoard(on: anchor)
                 
                 // Host가 말판을 배치했을 때 다른 피어들과 공유
-                if mpcManager.isHost {
+                if collab.isHost {
                     print("🎯 Host: 말판 앵커 추가됨 - Guest들과 공유 중...")
                     // 앵커가 자동으로 다른 피어들과 공유됨
                 }
@@ -93,16 +93,14 @@ class ARCoordinator: NSObject, ARSessionDelegate {
 
         anchors.filter { ($0.name ?? "") == "YutBoardAnchor" }.forEach {
             boardManager.placeYutBoard(on: $0)
-            if mpcManager.isHost { /* ... */ }
+            if collab.isHost { /* ... */ }
         }
     }
     
     // 협업 데이터 수신 및 전송
     func session(_ session: ARSession, didReceive collaborationData: Data) {
         // MPC를 통해 협업 데이터 전송
-        if let mpcSession = mpcManager.session {
-            try? mpcSession.send(collaborationData, toPeers: mpcSession.connectedPeers, with: .reliable)
-        }
+        collab.relayCollaborationData(collaborationData)
     }
     
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
@@ -217,12 +215,9 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     
     // Host가 말판을 배치할 때 호출
     func placeBoardForCollaboration(at position: SIMD3<Float>) {
-        guard mpcManager.isHost else { return }
-        
-        // 말판 앵커 생성 및 추가
+        guard collab.isHost else { return }
         let anchor = ARAnchor(name: "YutBoardAnchor", transform: matrix_identity_float4x4)
         arView?.session.add(anchor: anchor)
-        
         print("🎯 Host: 말판 배치 완료 - Guest들과 공유 중...")
     }
     
@@ -235,10 +230,7 @@ class ARCoordinator: NSObject, ARSessionDelegate {
             gamePhase: arState.gamePhase,
             yutResult: arState.gameManager.yutResult
         )
-        
-        if let data = try? JSONEncoder().encode(gameState) {
-            try? mpcManager.session.send(data, toPeers: mpcManager.session.connectedPeers, with: .reliable)
-        }
+        collab.sendGameState(gameState)
     }
     
     // MARK: - Piece Movement Logic
