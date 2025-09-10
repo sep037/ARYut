@@ -10,7 +10,7 @@ import Combine
 import RealityKit
 
 final class PlaneManager {
-    weak var scene: Scene? // ARCoordinator 대신 Scene만 주입
+    var scene: Scene? // ARCoordinator 대신 Scene만 주입
     private var planeEntities: [UUID: ModelEntity] = [:]
     private var planeAreas: [UUID: Float] = [:]
     
@@ -20,10 +20,6 @@ final class PlaneManager {
     private let recognizedAreaSubject = CurrentValueSubject<Float, Never>(0)
     var recognizedAreaPublisher: AnyPublisher<Float, Never> {
         recognizedAreaSubject.eraseToAnyPublisher()
-    }
-
-    init(scene: Scene? = nil) {
-        self.scene = scene
     }
 
     func addPlane(for anchor: ARPlaneAnchor) {

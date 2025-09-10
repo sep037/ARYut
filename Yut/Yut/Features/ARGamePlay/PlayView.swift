@@ -67,10 +67,9 @@ struct PlayView: View {
             VStack {
                 // 게임 상태에 따라 상단 안내 뷰 + 하단 인터랙션 UI를 함께 표시
                 switch arState.gamePhase {
-                    
                     // 1. 바닥 탐색 중 (아직 충분히 인식되지 않음)
                 case .arSessionLoading:
-                    DecoratedBackground{
+                    DecoratedBackground {
                         InstructionView(text: "카메라가 켜지고 윷놀이가 시작됩니다!")
                     }.task { @MainActor in
                         arState.actionStream.send(.preloadModels)
@@ -127,7 +126,6 @@ struct PlayView: View {
                     
                     // 5. 윷 던지기 준비 단계
                 case .readyToThrow:
-
                     VStack {
                         let currentPlayer = arState.gameManager.currentPlayer
                                                 
@@ -148,13 +146,11 @@ struct PlayView: View {
 //                                    .foregroundColor(.white)
 //                                    .cornerRadius(10)
 //                                    .font(.system(size: 14, weight: .bold))
-//
 //                                }
 //                            }
 
                             // 윷 던지기 버튼 표시 조건
                             YutThrowButton(sequence: currentPlayer.sequence) {
-                                
                                 arState.showThrowButton = false
                                 showYutGatheringSequence = true
                                 showFinalFrame = false

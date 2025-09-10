@@ -11,6 +11,6 @@ enum Route: Hashable {
     case guestNameInput
     case roomList(String)
     case waitingRoom(RoomModel)
-    case winner
     case playView
+    case winner
 }

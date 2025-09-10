@@ -9,7 +9,7 @@ class ARCoordinator: NSObject, ARSessionDelegate {
 
     // MARK: - 외부 연결 (의존 객체)
     
-    weak var arView: ARView? {
+    var arView: ARView? {
         didSet {
             gestureHandler.arView = arView
             planeManager.scene = arView?.scene
@@ -34,7 +34,7 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     
     var gestureHandler: GestureHandler!
     var boardManager: BoardManager!
-    var planeManager: PlaneManager!
+    var planeManager: PlaneManager = PlaneManager()
     var pieceManager: PieceManager!
     var yutManager: YutManager!
     var assetCacheManager: AssetCacheManager!
@@ -45,7 +45,6 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     override init() {
         super.init()
         self.boardManager = BoardManager(coordinator: self)
-        self.planeManager = PlaneManager()
         self.pieceManager = PieceManager(coordinator: self)
         self.yutManager = YutManager(coordinator: self)
         self.assetCacheManager = AssetCacheManager()
