@@ -139,7 +139,6 @@ struct WaitingRoomView: View {
         //        navigationManager.push(.playView)
         if viewModel.players.count >= 2 {
             isGameStarting = true
-            arCoordinator.setupNewGame(with: viewModel.players)
             navigationManager.push(.playView)
         }
     }

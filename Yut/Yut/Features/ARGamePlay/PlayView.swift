@@ -197,15 +197,21 @@ struct PlayView: View {
                 }
             }
         }
-        .onAppear {
-            arState.sessionUUID = UUID() // 강제 리프레시 → ARView 재생성
-            print("👀 viewModel object identity:", ObjectIdentifier(viewModel))
-            
-            print("👀 players (PlayView onAppear):", viewModel.players.map(\.name))
-            
+        .onChange(of: arState.isCoordinatorReady) { ready in
+            guard ready else { return }
+            guard arCoordinator.arState != nil else {
+                print("❌ Coordinator not fully ready")
+                return
+            }
+
             if viewModel.players.count >= 2 {
                 arCoordinator.setupNewGame(with: viewModel.players)
             }
+        }
+        .onAppear {
+            arState.sessionUUID = UUID() // 강제 리프레시 → ARView 재생성
+            print("👀 viewModel object identity:", ObjectIdentifier(viewModel))
+            print("👀 players (PlayView onAppear):", viewModel.players.map(\.name))
         }
         .navigationBarBackButtonHidden(true)
     }

@@ -22,13 +22,23 @@ class ARCoordinator: NSObject, ARSessionDelegate {
             if let arState {
                 arState.coordinator = self
                 actionStreamHandler.subscribe(to: arState)
+                
+                gameFlow = GameFlowController(
+                    state: arState,
+                    pieceManager: pieceManager,
+                    boardManager: boardManager,
+                    yutManager: yutManager
+                )
+                arState.isCoordinatorReady = true
             }
         }
     }
     
-    // MARK: - MPC 연결
     
     private let collab = CollaborationService()
+    
+    private var gameFlow: GameFlowController!
+    
     
     // MARK: - 서브 매니저
     
@@ -39,9 +49,7 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     var yutManager: YutManager!
     var assetCacheManager: AssetCacheManager!
     var actionStreamHandler: ActionStreamHandler!
-    
-    // MARK: - 초기화
-    
+        
     override init() {
         super.init()
         self.boardManager = BoardManager(coordinator: self)
@@ -119,96 +127,21 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     
     // '새 게임 준비' 액션을 처리하는 함수
     func setupNewGame(with players: [PlayerModel]) {
-        let safePlayers = players
-        
-        Task { @MainActor in
-            guard let arState = self.arState else { return }
-            
-            arState.gameManager.startGame(with: players)
-            self.pieceManager.boardAnchor = self.boardManager.yutBoardAnchor
-            arState.gamePhase = .readyToThrow
-		}
+        gameFlow.setupNewGame(with: players)
     }
     
     // 새 말 놓을 때
     func showDestinationsForNewPiece() {
-        guard let arState = self.arState else { return }
-        let gameManager = arState.gameManager
-        
-        // 시작점에 있는 말과, 윷 결과 게임매니저로부터 가져오기
-        guard let newPiece = gameManager.currentPlayer.pieces.first(where: { $0.position == "_6_6" }),
-              let yutResult = gameManager.yutResult
-        else { return }
-        
-//        print("새말 놓을 때 \(gameManager.currentPlayer.pieces[0])")
-        let piece = gameManager.currentPlayer.pieces[0]
-        print("새말 놓을 때 id: \(piece.id), isOnBoard: \(piece.isSelected), position: \(piece.position)")
-        
-        let destinations = gameManager.routeOptions(for: newPiece, yutResult: yutResult, currentRouteIndex: newPiece.routeIndex)
-        
-        // 목적지 타일 하이라이트
-        if !destinations.isEmpty {
-            let destinationNames = destinations.map { $0.destinationID }
-            self.pieceManager.highlightTiles(named: destinationNames)
-            
-            arState.selectedPieces = [newPiece]
-            arState.availableDestinations = destinationNames
-            DispatchQueue.main.async {
-                arState.gamePhase = .selectingDestination
-            }
-        }
+        gameFlow.showDestinationsForNewPiece()
     }
     
     // 윷 결과 업데이트 후 -> 움직일 말 선택
     func yutThrowCompleted(with result: YutResult) {
-        guard let arState = self.arState else { return }
-        
-        // 윷 결과 업데이트 (UI 반영, 매니저에게 전달)
-        arState.yutResult = result
-        arState.gameManager.yutResult = result
-        print("윷 결과\(result)")
-        
-        self.pieceManager.clearAllHighlights()
-        
-        DispatchQueue.main.async {
-            arState.gamePhase = .showingYutResult
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                // 던져진 윷 제거
-                if let yutManager = arState.coordinator?.yutManager {
-                    for yutModel in yutManager.thrownYuts {
-                        yutModel.entity.parent?.removeFromParent()
-                    }
-                    yutManager.thrownYuts.removeAll()
-                }
-                arState.gamePhase = .selectingPieceToMove
-            }
-        }
+        gameFlow.yutThrowCompleted(with: result)
     }
     
     func endTurn() {
-        guard let arState = self.arState else { return }
-        let gameManager = arState.gameManager
-        
-        // 윷이나 모가 아니라면 다음 플레이어로 턴을 넘깁니다.
-        if gameManager.yutResult?.isExtraTurn == false {
-            gameManager.nextTurn()
-            print("턴 종료! 다음 플레이어: \(gameManager.currentPlayer.name)")
-            arState.gamePhase = .readyToThrow
-        } else {
-            self.arState?.yutResult = nil
-            DispatchQueue.main.async {
-                arState.gamePhase = .showingYutResult
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    arState.gamePhase = .readyToThrow
-                }
-            }
-            print("🎁 윷이나 모! 한 번 더 던지세요.")
-        }
-        
-        // 다시 윷을 던질 준비 상태로 돌아갑니다.
-//        arState.gamePhase = .readyToThrow
-        
+        gameFlow.endTurn()
     }
     
     // MARK: - MPC 협업 기능
@@ -237,24 +170,12 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     
     /// 1. GestureHandler로부터 최초 이동 요청을 받습니다.
     func processMoveRequest(pieces: [PieceModel], to destination: String) {
-        guard let arState = self.arState else { return }
-        
-        let piecesAtDestination = arState.gameManager.cellStates[destination] ?? []
-        
-        if piecesAtDestination.isEmpty {
-            executeMove(pieces: pieces, to: destination, didCarry: false)
-        } else if let firstPiece = piecesAtDestination.first, let movingPieceOwner = pieces.first?.owner, firstPiece.owner.id != movingPieceOwner.id {
-            executeMove(pieces: pieces, to: destination, didCarry: false)
-        } else {
-            arState.pendingMove = (pieces, destination)
-            arState.gamePhase = .promptingForCarry
-        }
+        gameFlow.processMoveRequest(pieces: pieces, to: destination)
     }
     
     /// 2. 사용자가 '업기'/'따로가기'를 선택하면 호출됩니다.
     func resolveMove(carry: Bool) {
-        guard let pendingMove = arState?.pendingMove else { return }
-        executeMove(pieces: pendingMove.pieces, to: pendingMove.destination, didCarry: carry)
+        gameFlow.resolveMove(carry: carry)
     }
     
     /// 3. 모든 정보가 확정된 후, 실제 말 이동 및 게임 상태 변경을 실행하는 함수
