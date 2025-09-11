@@ -38,11 +38,11 @@ struct RootView: View {
                             arCoordinator: arCoordinator
                         )
                         .environmentObject(viewModel)
-                    case .winner:
-                        WinnerView()
                     case .playView:
                         PlayView(arCoordinator: arCoordinator)
                             .environmentObject(viewModel)
+                    case .winner:
+                        WinnerView()
                     }
                 }
         }
@@ -50,6 +50,6 @@ struct RootView: View {
     }
 }
 
-#Preview {
-    RootView()
-}
+//#Preview {
+//    RootView()
+//}

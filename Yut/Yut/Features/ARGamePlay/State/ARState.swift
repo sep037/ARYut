@@ -36,6 +36,8 @@ class ARState: ObservableObject {
     weak var coordinator: ARCoordinator?
 
     @Published var showFinalFrame: Bool = false
+    
+    @Published var isCoordinatorReady: Bool = false
 }
 
 extension ARState {

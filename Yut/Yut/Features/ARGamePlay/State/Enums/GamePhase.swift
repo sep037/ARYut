@@ -1,11 +1,10 @@
 // MARK: - 게임 상태(단계) 정의
 
 enum GamePhase {
-    
     // 초기 설정 단계
     case arSessionLoading
-    case searchingForSurface        // 1단계: 바닥을 인식하는 중
-    case placeBoard                 // 2단계: 평면에 윷판 배치
+    case scanningPlanes             // 1단계: 바닥을 인식하는 중
+    case placingBoard               // 2단계: 평면에 윷판 배치
     case adjustingBoard             // 3단계: 윷판 위치 및 크기 조절
     case boardConfirmed             // 4단계: 윷판 확정 및 게임 시작 대기
     
@@ -16,5 +15,4 @@ enum GamePhase {
     case selectingDestination       // 7단계: 말의 이동 위치 선택
     case promptingForCarry          // 8단계: 업기/따로 가기 선택 요청
     // case pieceMoved              // (예정) 9단계: 말 이동 완료
-    
 }

@@ -11,28 +11,24 @@ import ARKit
 
 final class PieceManager {
     
-    private unowned let coordinator: ARCoordinator
-
-    
-    weak var boardAnchor: AnchorEntity? // 윷판 앵커
-    weak var gameManager: GameManager?
+    var boardAnchor: AnchorEntity // 윷판 앵커
+    let gameManager: GameManager
     
     var pieceEntities: [Entity] = []
     
     private var originalMaterials: [ModelEntity: RealityFoundation.Material] = [:]
     static let pieceScale: SIMD3<Float> = [0.3, 10.0, 0.3]
     
-    init(coordinator: ARCoordinator) {
-        self.coordinator = coordinator
-        
+    init(boardAnchor: AnchorEntity, gameManager: GameManager) {
+        self.boardAnchor = boardAnchor
+        self.gameManager = gameManager
     }
     
     // MARK: - Pieces Logic
     
     // 판 밖에 있던 말을 처음으로 AR 씬에 추가하는 함수
     func placePieceOnBoard(piece: PieceModel, on tileName: String) {
-        
-        guard let destinationTile = boardAnchor?.findEntity(named: tileName) else {
+        guard let destinationTile = boardAnchor.findEntity(named: tileName) else {
             print("❌ [PieceManager] placePieceOnBoard: 목적지 \(tileName) 타일을 찾을 수 없습니다.")
             return
         }
@@ -54,9 +50,8 @@ final class PieceManager {
         print("✅ [PieceManager] \(piece.entity.name)을 \(tileName)에 처음으로 배치했습니다.")
     }
     
-    
     func movePiece(piece: Entity, to tileName: String) {
-        guard let destinationTile = boardAnchor?.findEntity(named: tileName) else {
+        guard let destinationTile = boardAnchor.findEntity(named: tileName) else {
             print("❌ [PieceManager] movePiece: 목적지 \(tileName) 타일을 찾을 수 없습니다.")
             return
         }
@@ -77,13 +72,10 @@ final class PieceManager {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             piece.setParent(destinationTile)
             piece.setPosition([0, 0.02, 0], relativeTo: destinationTile)
-
+            
             print("✅ \(piece.name) 이동 완료 → \(tileName)")
         }
     }
-    
-    
-    
     
     // 잡힌 말들을 판에서 제거하는 시각적 처리를 합니다.
     func resetPieces(_ pieces: [PieceModel]) {
@@ -95,8 +87,7 @@ final class PieceManager {
     
     // 업기/따로가기 시각 효과를 위해 타일 위의 말들을 재배치합니다.
     func arrangePiecesOnTile(_ tileName: String, didCarry: Bool) {
-        guard let gameManager = self.gameManager,
-              let tileEntity = boardAnchor?.findEntity(named: tileName) else { return }
+        guard let tileEntity = boardAnchor.findEntity(named: tileName) else { return }
         
         // GameManager의 cellStates를 기준으로 해당 타일에 있는 모든 말을 논리적으로 찾아옵니다.
         let piecesOnTile = gameManager.cellStates[tileName] ?? []
@@ -141,7 +132,7 @@ final class PieceManager {
     
     // 하이라이트할 Tile Entity 반환
     func highlightTiles(named tileNames: [String]) {
-        guard let boardEntity = boardAnchor?.children.first else {
+        guard let boardEntity = boardAnchor.children.first else {
             print("❌ 윷판 엔티티 없음")
             return
         }
@@ -163,7 +154,6 @@ final class PieceManager {
             applyHighlight(to: pieceEntity)
         }
     }
-    
     
     // 인자로 받은 엔티티의 하이라이트 적용
     private func applyHighlight(to entity: ModelEntity) {

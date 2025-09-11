@@ -5,13 +5,13 @@
 //  Created by yunsly on 7/17/25.
 //
 
-import SwiftUI
 import ARKit
 import RealityKit
+import SwiftUI
 
 // UIKit 기반의 ARView를 SwiftUI에서 사용하기 위한 wrapper
 struct ARViewContainer: UIViewRepresentable {
-    @ObservedObject var arState: ARState // ContentView로부터 arState를 받아서 관찰
+    @ObservedObject var arState: ARState
     
     // MARK: - Coordinator 생성
     func makeCoordinator() -> ARCoordinator {
