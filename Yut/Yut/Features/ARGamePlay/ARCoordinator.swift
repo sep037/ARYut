@@ -26,17 +26,23 @@ class ARCoordinator: NSObject, ARSessionDelegate {
                 arState.coordinator = self
                 actionStreamHandler.subscribe(to: arState)
                 
+                guard let pieceManager = pieceManager else {
+                    print("❌ PieceManager가 아직 준비되지 않았습니다.")
+                    return
+                }
+
                 gameFlow = GameFlowController(
                     state: arState,
                     pieceManager: pieceManager,
                     boardManager: boardManager,
                     yutManager: yutManager
                 )
-                arState.isCoordinatorReady = true
+                DispatchQueue.main.async {
+                    arState.isCoordinatorReady = true
+                }
             }
         }
     }
-    
     
     private let collab = CollaborationService()
     
@@ -48,19 +54,19 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     var gestureHandler: GestureHandler!
     var boardManager: BoardManager!
     var planeManager: PlaneManager = PlaneManager()
-    var pieceManager: PieceManager!
+    var pieceManager: PieceManager?
     var yutManager: YutManager!
     var assetCacheManager: AssetCacheManager!
     var actionStreamHandler: ActionStreamHandler!
-        
+    
     override init() {
         super.init()
-        self.pieceManager = PieceManager(coordinator: self)
         self.yutManager = YutManager(coordinator: self)
         self.assetCacheManager = AssetCacheManager()
         self.gestureHandler = GestureHandler(coordinator: self)
         self.actionStreamHandler = ActionStreamHandler(coordinator: self)
     }
+    
     
     private func bindPlaneArea() {
         planeManager
@@ -82,6 +88,8 @@ class ARCoordinator: NSObject, ARSessionDelegate {
     
     func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
         for anchor in anchors {
+            print("🔍 Anchor detected:", anchor.name ?? "nil")
+
             if let planeAnchor = anchor as? ARPlaneAnchor {
                 planeManager.addPlane(for: planeAnchor)
             } else if let name = anchor.name, name == "YutBoardAnchor" {
@@ -91,6 +99,11 @@ class ARCoordinator: NSObject, ARSessionDelegate {
                 if collab.isHost {
                     print("🎯 Host: 말판 앵커 추가됨 - Guest들과 공유 중...")
                     // 앵커가 자동으로 다른 피어들과 공유됨
+                }
+                
+                if let boardAnchor = boardManager.yutBoardAnchor {
+                    self.pieceManager = PieceManager(boardAnchor: boardAnchor,
+                                                     gameManager: GameManager.shared)
                 }
                 
                 DispatchQueue.main.async {

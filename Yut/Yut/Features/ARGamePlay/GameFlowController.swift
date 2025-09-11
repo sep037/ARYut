@@ -28,7 +28,11 @@ final class GameFlowController {
     func setupNewGame(with players: [PlayerModel]) {
         Task { @MainActor in
             state.gameManager.startGame(with: players)
-            pieceManager.boardAnchor = boardManager.yutBoardAnchor
+            guard let anchor = boardManager.yutBoardAnchor else {
+                print("❌ YutBoardAnchor가 아직 준비되지 않았습니다.")
+                return
+            }
+            pieceManager.boardAnchor = anchor
             state.gamePhase = .readyToThrow
         }
     }

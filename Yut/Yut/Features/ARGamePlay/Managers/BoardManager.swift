@@ -5,7 +5,7 @@ import RealityKit
 import SwiftUI
 
 final class BoardManager {
-    private weak var scene: RealityKit.Scene?
+    private let scene: RealityKit.Scene?
 
     private(set) var yutBoardAnchor: AnchorEntity?
 
@@ -15,7 +15,12 @@ final class BoardManager {
 
     /// 윷판 모델을 앵커에 배치
     func placeYutBoard(on anchor: ARAnchor) {
-        guard let scene = scene else { return }
+        guard let scene = scene else {
+            print("❌ [BoardManager] Scene is nil - 윷판을 추가할 수 없습니다.")
+            
+            return
+        }
+        print("✅ [BoardManager] Scene is ready, proceeding to add board")
         if yutBoardAnchor != nil { return } // 중복 생성 방지
 
         do {
